@@ -47,6 +47,30 @@ class Sidebars
             'before_title'      => '<h3 class="widgettitle>',
             'after_title'       => '</h3>',
         ));
+
+        add_action('widgets_init', array(__CLASS__, 'register'), 100);
+    }
+
+    /**
+     * Register all the widgets that are added via this plugin.
+     *
+     * @since   1.0
+     * @access  public
+     * @uses    register_sidebar
+     * @uses    apply_filters
+     * @return  null
+     */
+    public static function register()
+    {
+        foreach(static::sidebars() as $id => $args)
+        {
+            $args['id'] = static::get_unique($args['id']);
+
+            register_sidebar(wp_parse_args(
+                $args,
+                apply_filters('arbitrary_sidebars_single_args', static::$args, $id)
+            ));
+        }
     }
 
     /**
@@ -132,6 +156,14 @@ class Sidebars
         return $res;
     }
 
+    /**
+     * Get a unique sidebar id.
+     *
+     * @since   1.0
+     * @access  protected
+     * @param   string $id The ID to make unique
+     * @return  string
+     */
     protected function get_unique($id)
     {
         $c = 1;
