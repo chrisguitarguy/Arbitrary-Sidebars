@@ -14,7 +14,7 @@ namespace Chrisguitarguy\ArbitrarySidebars;
 
 !defined('ABSPATH') && exit;
 
-final class Admin extends Sidebars
+class Admin extends SidebarBase
 {
     /**
      * The nonce name and for the admin page.
@@ -52,7 +52,7 @@ final class Admin extends Sidebars
      * @access  private
      * @var     array
      */
-    private static $tabs = array();
+    private $tabs = array();
 
     /**
      * Container for the error messages.
@@ -61,34 +61,29 @@ final class Admin extends Sidebars
      * @access  private
      * @var     array
      */
-    private static $msg = array();
+    private $msg = array();
 
     /**
-     * Adds actions and such.
-     *
-     * @since   1.0
-     * @access  public
-     * @uses    add_action
-     * @return  null
+     * {@inheritdoc}
      */
-    public static function init()
+    public function _setup()
     {
-        add_action('admin_menu', array(__CLASS__, 'page'));
-        add_action(static::ACTION . 'view', array(__CLASS__, 'view_list'));
-        add_action(static::ACTION . 'add', array(__CLASS__, 'view_add'));
-        add_action(static::ACTION .'edit', array(__CLASS__, 'view_edit'));
+        add_action('admin_menu', array($this, 'page'));
+        add_action(static::ACTION . 'view', array($this, 'view_list'));
+        add_action(static::ACTION . 'add', array($this, 'view_add'));
+        add_action(static::ACTION .'edit', array($this, 'view_edit'));
 
-        static::$tabs = apply_filters('arbitrary_sidebars_tabs', array(
+        $this->tabs = apply_filters('arbitrary_sidebars_tabs', array(
             'view'  => __('Sidebars', 'arbitrary-sb'),
             'add'   => __('Add', 'arbitrary-sb'),
         ));
 
-        static::$msg = apply_filters('arbitrary_sidebars_errors', array(
+        $this->msg = apply_filters('arbitrary_sidebars_errors', array(
             1   => __('Sidebars must have a name and id.', 'arbitrary-sb'),
             2   => __('Sidebar saved.', 'arbitrary-sb'),
             3   => __('An error occured. Please try again!', 'arbitrary-sb'),
             4   => __('Sidebar deleted', 'arbitrary-sb'),
-            5   => __('An error occured while deleting the sidebar', 'arbitrar-sb'),
+            5   => __('An error occured while deleting the sidebar', 'arbitrary-sb'),
         ));
     }
 
@@ -99,19 +94,19 @@ final class Admin extends Sidebars
      * @access  public
      * @uses    add_theme_page
      * @uses    add_action
-     * @return  null
+     * @return  void
      */
-    public static function page()
+    public function page()
     {
         $p = add_theme_page(
             __('Arbitrary Sidebars', 'arbitrary-sb'),
             __('Sidebars', 'arbitrary-sb'),
             static::CAP,
             static::SLUG,
-            array(__CLASS__, 'page_cb')
+            array($this, 'page_cb')
         );
 
-        add_action("load-{$p}", array(__CLASS__, 'load'));
+        add_action("load-{$p}", array($this, 'load'));
     }
 
     /**
@@ -123,7 +118,7 @@ final class Admin extends Sidebars
      * @uses    do_action
      * @return  null
      */
-    public static function page_cb()
+    public function page_cb()
     {
         ?>
         <div class="wrap">
@@ -131,7 +126,7 @@ final class Admin extends Sidebars
             <?php screen_icon(); ?>
 
             <h2 class="nav-tab-wrapper" style="margin-bottom:1em;">
-                <?php foreach(static::$tabs as $t => $label): ?>
+                <?php foreach($this->tabs as $t => $label): ?>
                     <a href="<?php static::tab_url($t); ?>" 
                        class="nav-tab <?php if($_GET['tab'] == $t): ?>nav-tab-active<?php endif; ?>">
                         <?php echo esc_html($label); ?>
@@ -139,7 +134,7 @@ final class Admin extends Sidebars
                 <?php endforeach; ?>
             </h2>
 
-            <?php static::display_errors(); ?>
+            <?php $this->display_errors(); ?>
 
             <?php do_action(static::ACTION . $_GET['tab']); ?>
 
@@ -155,20 +150,22 @@ final class Admin extends Sidebars
      * @access  public
      * @return  null
      */
-    public static function load()
+    public function load()
     {
-        if('post' == strtolower($_SERVER['REQUEST_METHOD']))
+        if ('POST' === $_SERVER['REQUEST_METHOD']) {
             static::save($_POST);
+        }
 
-        if(!isset($_GET['tab']))
+        if (!isset($_GET['tab'])) {
             $_GET['tab'] = 'view';
-        else if('edit' == $_GET['tab'])
-            static::$tabs['edit'] = __('Edit', 'arbitrary-sb');
+        } elseif('edit' == $_GET['tab']) {
+            $this->tabs['edit'] = __('Edit', 'arbitrary-sb');
+        }
     }
 
     /********** Tab Callback Functions **********/
 
-    public static function view_list()
+    public function view_list()
     {
         $t = new ListTable();
         $t->prepare_items();
@@ -176,7 +173,7 @@ final class Admin extends Sidebars
         $t->display();
     }
 
-    public static function view_add()
+    public function view_add()
     {
         echo '<h4>';
         esc_html_e('Add a Sidebar', 'arbitrary-sb');
@@ -184,7 +181,7 @@ final class Admin extends Sidebars
         static::show_form();
     }
 
-    public static function view_edit()
+    public function view_edit()
     {
         $sidebars = static::sidebars();
 
@@ -213,8 +210,7 @@ final class Admin extends Sidebars
      */
     private static function save($data)
     {
-        if(!isset($data['action']))
-        {
+        if (!isset($data['action'])) {
             wp_die(
                 __('Invalid Action', 'arbitrary-sb'),
                 __('Invalid Action', 'arbitrary-sb'),
@@ -224,8 +220,7 @@ final class Admin extends Sidebars
 
         check_admin_referer(static::NONCE . $data['action'], static::NONCE);
 
-        if(!current_user_can(static::CAP))
-        {
+        if (!current_user_can(static::CAP)) {
             wp_die(
                 __('Cheatin&#8217; uh?', 'arbitrary-sb'),
                 __('WordPress Failure Notice', 'arbitrary-sb'),
@@ -236,22 +231,24 @@ final class Admin extends Sidebars
         $id = isset($data['id']) ? sanitize_title_with_dashes($data['id']) : false;
         $name = isset($data['name']) ? $data['name'] : false;
 
-        if('delete' == $data['action'])
-        {
+        if ('delete' == $data['action']) {
             $res = static::delete_sidebar($id);
 
-            if($res)
+            if ($res) {
                 static::redirect(4);
-            else
+            } else {
                 static::redirect(5);
+            }
         }
             
 
-        if(!$id || !$name)
+        if (!$id || !$name) {
             static::redirect(1);
+        }
 
-        if(isset($data['old_id']) && $id != $data['old_id'])
+        if (isset($data['old_id']) && $id != $data['old_id']) {
             $id = static::get_unique($id);
+        }
 
         // do I need to do more validation here for the old sidebar id?
         $res = static::save_sidebar(
@@ -262,17 +259,18 @@ final class Admin extends Sidebars
             isset($data['old_id']) && $id != $data['old_id'] ? $data['old_id'] : false
         );
 
-        if($res)
+        if ($res) {
             static::redirect(2);
-        else
+        } else {
             static::redirect(3);
+        }
     }
 
     /**
      * Get a url relative to this page.
      *
      * @since   1.0
-     * @access  private
+     * @access  public
      * @param   array $params url parametere to add
      * @uses    add_query_arg
      * @return  string The full url
@@ -406,12 +404,12 @@ final class Admin extends Sidebars
      * @uses    do_action
      * @return  null
      */
-    public static function display_errors()
+    private function display_errors()
     {
-        if(isset($_GET['msg']) && isset(static::$msg[$_GET['msg']]))
+        if(isset($_GET['msg']) && isset($this->msg[$_GET['msg']]))
         {
             echo '<div class="updated"><p>';
-            echo esc_html(static::$msg[$_GET['msg']]);
+            echo esc_html($this->msg[$_GET['msg']]);
             echo '</p></div>';
         }
 
