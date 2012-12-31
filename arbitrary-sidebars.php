@@ -47,5 +47,6 @@ require_once CGG_AB_PATH . 'inc/functions.php';
 spl_autoload_register('arbitrary_sidebars_loader');
 
 Sidebars::init();
-if(is_admin())
+if (is_admin()) {
     Admin::init();
+}
