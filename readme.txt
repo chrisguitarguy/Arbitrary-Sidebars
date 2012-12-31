@@ -4,7 +4,7 @@ Donate link: http://www.pwsausa.org/give.htm
 Tags: sidebars, sidebar, widget
 Requires at least: 3.4
 Tested up to: 3.5
-Stable tag: 1.0
+Stable tag: 1.1
 License: GPLv2
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
